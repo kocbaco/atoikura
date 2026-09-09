@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>あといくら？ v4.1</title>
+<style>
+:root{
+  --bg:#f4f4f5; --card:#fff; --text:#111; --muted:#666; --line:#ddd;
+  --accent:#111; --soft:#ececec; --danger:#a40000;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+nav{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
+.tabs{display:flex;max-width:720px;margin:auto}
+.tab{flex:1;border:0;background:transparent;padding:14px 6px;font-weight:700;font-size:15px;border-bottom:3px solid transparent}
+.tab.on{border-bottom-color:var(--accent)}
+.app{max-width:720px;margin:0 auto;padding:14px 14px 40px}
+.page{display:none}.page.on{display:block}
+.box{background:var(--card);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+h1{font-size:25px;margin:0 0 4px} h2{font-size:18px;margin:0 0 14px}
+.label{font-size:13px;color:var(--muted);font-weight:650}
+.muted,.small{color:var(--muted)} .small{font-size:13px}
+.big{font-size:34px;font-weight:800;margin:3px 0 16px}
+.remain{font-size:38px;font-weight:850;margin:2px 0 4px}
+.progress{height:12px;background:var(--soft);border-radius:999px;margin-top:12px;overflow:hidden}
+#bar{height:100%;width:0;background:#111;transition:width .2s}
+input{width:100%;font:inherit;border:1px solid #ccc;border-radius:10px;padding:11px 12px;background:#fff}
+.amount{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:7px}
+button{font:inherit;cursor:pointer}
+#add,.wide,.backupbtn{border:0;border-radius:10px;background:#111;color:#fff;font-weight:750;padding:11px 16px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:7px}
+.cardbtn{border:1px solid #ccc;background:#fff;border-radius:10px;padding:10px 4px}
+.cardbtn.on{background:#111;color:#fff;border-color:#111}
+ul{list-style:none;padding:0;margin:0}
+li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 0;border-top:1px solid #eee}
+li:first-child{border-top:0}
+.del{border:1px solid #ccc;background:#fff;border-radius:8px;padding:6px 9px}
+.row{display:grid;grid-template-columns:1fr 1.25fr;align-items:center;gap:12px;padding:8px 0}
+.money{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center}
+.calcbox{background:#f3f3f3;border-radius:12px;padding:14px;margin:14px 0}
+.calcnum{font-size:27px;font-weight:800}
+.status{margin-top:9px;font-size:13px;color:#666;min-height:20px}
+.status.unsaved{font-weight:650;color:#333}
+.wide{width:100%;margin-top:8px}
+.wide.saved{background:#666}
+.note{font-size:12px;color:#777;line-height:1.55;margin-top:10px}
+.sectionsep{height:1px;background:#eee;margin:18px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dateinput{font:inherit;border:1px solid #ccc;border-radius:10px;padding:11px 12px;background:#fff;width:100%}.dataStat{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:14px;padding:5px 0}
+.danger{border:1px solid #d8b2b2;background:#fff;color:var(--danger);border-radius:10px;font-weight:700;padding:10px 12px;width:100%}
+.fileinput{display:none}
+.badge{display:inline-block;font-size:12px;border-radius:999px;background:#eee;padding:3px 8px;margin-left:6px}
+.warn{font-size:13px;font-weight:650;margin-top:8px}
+@media(max-width:480px){
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .row{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<nav><div class="tabs">
+  <button class="tab on" data-page="card">カード</button>
+  <button class="tab" data-page="month">今月</button>
+  <button class="tab" data-page="data">データ</button>
+</div></nav>
+
+<main class="app">
+<section id="card" class="page on">
+  <div class="box">
+    <h1>あといくら？ <span class="badge">試作 v4.1</span></h1>
+    <div class="muted period"></div>
+    <div class="label" style="margin-top:20px">今期のカード利用</div>
+    <div id="spent" class="big">0円</div>
+    <div class="label">あと</div>
+    <div id="remaining" class="remain">今月タブで設定</div>
+    <div class="muted">カード固定費（予約済み） <span id="fixedDisplay">0円</span></div><div class="muted">今期の利用ライン <span id="line">未設定</span></div>
+    <div class="progress"><div id="bar"></div></div>
+  </div>
+
+  <div class="box">
+    <div class="label">利用額を追加</div>
+    <div class="amount"><input id="amount" type="text" inputmode="numeric" placeholder="例：3280"><button id="add">追加</button></div>
+    <div class="label" style="margin-top:14px">品目（任意）</div>
+    <input id="item" type="text" placeholder="例：本、新幹線、美容院">
+    <div class="label" style="margin-top:16px">カード</div>
+    <div class="cards">
+      <button class="cardbtn" data-c="楽天">楽天</button>
+      <button class="cardbtn" data-c="Amazon">Amazon</button>
+      <button class="cardbtn" data-c="PayPay">PayPay</button>
+      <button class="cardbtn" data-c="イオン">イオン</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="label" style="margin-bottom:8px">今期の入力</div>
+    <ul id="list"></ul>
+  </div>
+</section>
+
+<section id="month" class="page">
+  <div class="box">
+    <h1>今月のお金</h1>
+    <div class="muted period"></div>
+    <div class="row"><label>今期開始日</label><input id="periodStart" class="dateinput" type="date"></div>
+    <div class="row"><label>今期終了日</label><input id="periodEnd" class="dateinput" type="date"></div>
+
+    <div class="row"><label>手取り</label><div class="money"><input id="salary" type="text" inputmode="numeric" placeholder="入力"><span>円</span></div></div>
+    <div class="row"><label>家賃関係</label><div class="money"><input id="rent" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>NISA</label><div class="money"><input id="nisa" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>電気代</label><div class="money"><input id="electric" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>積立</label><div class="money"><input id="saving" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>その他の先取り</label><div class="money"><input id="other" type="text" inputmode="numeric"><span>円</span></div></div>
+
+    <div class="calcbox">
+      <div class="label">今期カードに使える額</div>
+      <div id="calc" class="calcnum">手取りを入力</div>
+    </div>
+    <button id="saveMonth" class="wide">この内容で今期を設定</button>
+    <div id="status" class="status"></div>
+  </div>
+</section>
+
+<section id="data" class="page">
+  <div class="box">
+    <h1>データ管理</h1>
+    <div class="muted">基本設定とバックアップ</div>
+  </div>
+
+  <div class="box">
+    <h2>基本設定</h2>
+    <div class="note" style="margin-top:-6px;margin-bottom:10px">新しい15日〜14日の期間が始まったときに自動で引き継ぐ値です。手取りだけは毎回空欄になります。</div>
+    <div class="row"><label>家賃関係</label><div class="money"><input id="baseRent" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>NISA</label><div class="money"><input id="baseNisa" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>電気代</label><div class="money"><input id="baseElectric" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>通常月の積立</label><div class="money"><input id="baseSaving" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>8月・12月の積立</label><div class="money"><input id="baseSavingSpecial" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>その他の先取り</label><div class="money"><input id="baseOther" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>カード固定費</label><div class="money"><input id="baseFixedCard" type="text" inputmode="numeric"><span>円</span></div></div>
+    <button id="saveBase" class="wide">基本設定を保存</button>
+    <div id="baseStatus" class="status"></div>
+  </div>
+
+  <div class="box">
+    <h2>保存状況</h2>
+    <div class="dataStat"><span>利用履歴</span><strong id="statCount">0件</strong></div>
+    <div class="dataStat"><span>保存開始</span><strong id="statFirst">—</strong></div>
+    <div class="dataStat"><span>保存期間数</span><strong id="statPeriods">0期間</strong></div>
+    <div class="dataStat"><span>最終バックアップ</span><strong id="statBackup">まだありません</strong></div>
+    <div id="backupWarn" class="warn"></div>
+  </div>
+
+  <div class="box">
+    <h2>バックアップ</h2>
+    <div class="note" style="margin-top:-6px;margin-bottom:12px">その時点の全データを1つのJSONファイルに保存します。iPhoneでは保存先にiCloud Driveを選べます。</div>
+    <div class="grid2">
+      <button id="backup" class="backupbtn">バックアップを保存</button>
+      <button id="restoreBtn" class="backupbtn">バックアップから復元</button>
+    </div>
+    <input id="restoreFile" class="fileinput" type="file" accept=".json,application/json">
+  </div>
+
+  <div class="box">
+    <h2>リセット</h2>
+    <div class="note" style="margin-top:-6px;margin-bottom:12px">この端末の「あといくら？」の保存データをすべて削除します。</div>
+    <button id="resetAll" class="danger">すべてのデータを削除</button>
+  </div>
+</section>
+</main>
+
+<script>
+const EK="atoikura_entries_v4";
+const MK="atoikura_months_v4";
+const BK="atoikura_base_v4";
+const META="atoikura_meta_v4";
+
+let es=JSON.parse(localStorage.getItem(EK)||"[]");
+let ms=JSON.parse(localStorage.getItem(MK)||"{}");
+let base=JSON.parse(localStorage.getItem(BK)||"null");
+let meta=JSON.parse(localStorage.getItem(META)||"{}");
+let selected=localStorage.getItem("atoikura_selected_card")||"";
+
+const $=id=>document.getElementById(id);
+const num=v=>Number(String(v??"").replace(/,/g,""))||0;
+const comma=v=>{const d=String(v??"").replace(/[^0-9]/g,"");return d?Number(d).toLocaleString("ja-JP"):""};
+const yen=n=>Math.round(num(n)).toLocaleString("ja-JP")+"円";
+const jpWeek=["日","月","火","水","木","金","土"];
+const fd=d=>`${d.getMonth()+1}/${d.getDate()}(${jpWeek[d.getDay()]})`;
+const isoDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const localDate=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const plusDays=(s,n)=>{const d=localDate(s);d.setDate(d.getDate()+n);return isoDate(d)};
+
+function legacyStart(d=new Date()){
+  const x=new Date(d);
+  if(x.getDate()<15)x.setMonth(x.getMonth()-1);
+  return new Date(x.getFullYear(),x.getMonth(),15);
+}
+function legacyEnd(d=new Date()){
+  const s=legacyStart(d); return new Date(s.getFullYear(),s.getMonth()+1,14);
+}
+function legacyKey(d=new Date()){
+  const s=legacyStart(d);return `${s.getFullYear()}-${String(s.getMonth()+1).padStart(2,"0")}`;
+}
+function normalizePeriods(){
+  // v4.0 used YYYY-MM keys. Add explicit dates without discarding existing data.
+  Object.keys(ms).forEach(k=>{
+    const d=ms[k];
+    if(!d.startDate||!d.endDate){
+      const [y,m]=k.split("-").map(Number);
+      if(y&&m){
+        d.startDate=d.startDate||`${y}-${String(m).padStart(2,"0")}-15`;
+        const e=new Date(y,m,14);
+        d.endDate=d.endDate||isoDate(e);
+        d.fixedCard=num(d.fixedCard);
+      }
+    }
+  });
+  localStorage.setItem(MK,JSON.stringify(ms));
+}
+normalizePeriods();
+
+function sortedPeriods(){
+  return Object.entries(ms).filter(([,d])=>d.startDate&&d.endDate)
+    .sort((a,b)=>a[1].startDate.localeCompare(b[1].startDate));
+}
+function activePeriod(){
+  const today=isoDate(new Date());
+  const found=sortedPeriods().find(([,d])=>today>=d.startDate&&today<=d.endDate);
+  if(found)return {key:found[0],data:found[1]};
+  // If no saved current period, prepare the next continuous period from the latest saved one.
+  const arr=sortedPeriods();
+  if(arr.length){
+    const last=arr[arr.length-1][1];
+    const start=plusDays(last.endDate,1);
+    const ls=localDate(start);
+    const end=new Date(ls.getFullYear(),ls.getMonth()+1,ls.getDate()-1);
+    return {key:start,data:defaultFromBase(start,isoDate(end)),unsaved:true};
+  }
+  const s=legacyStart(),e=legacyEnd();
+  return {key:isoDate(s),data:defaultFromBase(isoDate(s),isoDate(e)),unsaved:true};
+}
+function defaultFromBase(startDate,endDate){
+  const m=localDate(startDate).getMonth()+1;
+  const b=base||{rent:0,nisa:0,electric:0,saving:0,savingSpecial:0,other:0,fixedCard:0};
+  return {startDate,endDate,salary:"",rent:num(b.rent),nisa:num(b.nisa),electric:num(b.electric),
+    saving:(m===8||m===12)?num(b.savingSpecial):num(b.saving),other:num(b.other),fixedCard:num(b.fixedCard)};
+}
+function currentPeriod(){return activePeriod()}
+function periodText(d=currentPeriod().data){return `${fd(localDate(d.startDate))} ～ ${fd(localDate(d.endDate))}`}
+function inPeriod(e,d){
+  const x=isoDate(new Date(e.date));return x>=d.startDate&&x<=d.endDate;
+}
+function limit(d){
+  if(d.salary==="")return null;
+  return num(d.salary)-num(d.rent)-num(d.nisa)-num(d.electric)-num(d.saving)-num(d.other);
+}
+function saveEntries(){localStorage.setItem(EK,JSON.stringify(es))}
+function saveMonths(){localStorage.setItem(MK,JSON.stringify(ms))}
+function saveMeta(){localStorage.setItem(META,JSON.stringify(meta))}
+
+function render(){
+  const p=currentPeriod(),d=p.data;
+  document.querySelectorAll(".period").forEach(x=>x.textContent=periodText(d));
+  const cur=es.filter(e=>inPeriod(e,d));
+  const sp=cur.reduce((a,e)=>a+num(e.amount),0);
+  const lim=p.unsaved?null:limit(d);
+  const fixed=p.unsaved?num(d.fixedCard):num(d.fixedCard);
+  $("spent").textContent=yen(sp);
+  $("fixedDisplay").textContent=yen(fixed);
+  $("line").textContent=lim===null?"未設定":yen(lim);
+  $("remaining").textContent=lim===null?"今月タブで設定":yen(lim-fixed-sp);
+  const used=sp+fixed;
+  $("bar").style.width=(lim&&lim>0?Math.max(0,Math.min(100,used/lim*100)):0)+"%";
+  $("list").innerHTML="";
+  cur.slice().reverse().forEach(e=>{
+    const li=document.createElement("li"),a=document.createElement("div"),dt=new Date(e.date);
+    a.innerHTML=`<div>${fd(dt)}　${yen(e.amount)}</div><div class="small">${e.card||""}${e.item?"　・　"+e.item:""}</div>`;
+    const b=document.createElement("button");b.className="del";b.textContent="削除";
+    b.onclick=()=>{if(!confirm("この入力を削除しますか？"))return;es=es.filter(x=>x.id!==e.id);saveEntries();render()};
+    li.append(a,b);$("list").append(li);
+  });
+  updateStats();
+}
+function loadMonth(){
+  const p=currentPeriod(),d=p.data;
+  $("periodStart").value=d.startDate;$("periodEnd").value=d.endDate;
+  ["salary","rent","nisa","electric","saving","other"].forEach(k=>$(k).value=comma(d[k]));
+  calcNow();
+  if(!p.unsaved){$("status").textContent="✓ 保存済み";$("status").className="status"}
+  else{$("status").textContent=base?"基本設定を引き継いでいます（まだ今期未保存）":"基本設定が未登録です";$("status").className="status unsaved"}
+}
+function readMonth(){
+  const v=k=>$(k).value;
+  return {startDate:$("periodStart").value,endDate:$("periodEnd").value,salary:v("salary")===""?"":num(v("salary")),
+    rent:num(v("rent")),nisa:num(v("nisa")),electric:num(v("electric")),saving:num(v("saving")),other:num(v("other")),
+    fixedCard:num(currentPeriod().data.fixedCard||base?.fixedCard||0)};
+}
+function calcNow(){const l=limit(readMonth());$("calc").textContent=l===null?"手取りを入力":yen(l)}
+function loadBase(){
+  const b=base||{rent:"",nisa:"",electric:"",saving:"",savingSpecial:"",other:"",fixedCard:""};
+  $("baseRent").value=comma(b.rent);$("baseNisa").value=comma(b.nisa);$("baseElectric").value=comma(b.electric);
+  $("baseSaving").value=comma(b.saving);$("baseSavingSpecial").value=comma(b.savingSpecial);
+  $("baseOther").value=comma(b.other);$("baseFixedCard").value=comma(b.fixedCard);
+}
+
+document.querySelectorAll(".tab").forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("on"));
+  btn.classList.add("on");$(btn.dataset.page).classList.add("on");
+  if(btn.dataset.page==="data")updateStats();
+});
+document.querySelectorAll(".cardbtn").forEach(btn=>{
+  if(btn.dataset.c===selected)btn.classList.add("on");
+  btn.onclick=()=>{selected=btn.dataset.c;localStorage.setItem("atoikura_selected_card",selected);
+    document.querySelectorAll(".cardbtn").forEach(x=>x.classList.toggle("on",x.dataset.c===selected))}
+});
+$("add").onclick=()=>{
+  const n=num($("amount").value);if(!n){alert("金額を入力してください");return}if(!selected){alert("カードを選んでください");return}
+  es.push({id:(crypto.randomUUID?crypto.randomUUID():Date.now()+""),amount:n,card:selected,item:$("item").value.trim(),date:new Date().toISOString()});
+  saveEntries();$("amount").value="";$("item").value="";render();$("amount").focus();
+};
+["amount","salary","rent","nisa","electric","saving","other","baseRent","baseNisa","baseElectric","baseSaving","baseSavingSpecial","baseOther","baseFixedCard"].forEach(id=>{
+  $(id).addEventListener("input",()=>{
+    $(id).value=comma($(id).value);
+    if(["salary","rent","nisa","electric","saving","other"].includes(id)){
+      calcNow();$("status").textContent="● 未保存の変更があります";$("status").className="status unsaved";
+      $("saveMonth").textContent="この内容で今期を設定";$("saveMonth").classList.remove("saved");
+    }
+  });
+});
+["periodStart","periodEnd"].forEach(id=>$(id).addEventListener("change",()=>{
+  $("status").textContent="● 未保存の変更があります";$("status").className="status unsaved";
+}));
+$("saveMonth").onclick=()=>{
+  const d=readMonth();
+  if(!d.startDate||!d.endDate){alert("今期の開始日と終了日を入力してください");return}
+  if(d.endDate<d.startDate){alert("終了日は開始日以降にしてください");return}
+  if(d.salary===""){alert("手取りを入力してください");return}
+  const old=currentPeriod();
+  // Preserve the fixed cost captured for this period; new periods use current base setting.
+  if(old.unsaved)d.fixedCard=num(base?.fixedCard||0); else d.fixedCard=num(old.data.fixedCard);
+  if(!old.unsaved && old.key!==d.startDate)delete ms[old.key];
+  ms[d.startDate]=d;saveMonths();
+  $("status").textContent="✓ 保存済み";$("status").className="status";
+  $("saveMonth").textContent="✓ 今期の設定を保存しました";$("saveMonth").classList.add("saved");
+  render();setTimeout(()=>{$("saveMonth").textContent="この内容で今期を設定";$("saveMonth").classList.remove("saved")},1800);
+};
+$("saveBase").onclick=()=>{
+  base={rent:num($("baseRent").value),nisa:num($("baseNisa").value),electric:num($("baseElectric").value),
+    saving:num($("baseSaving").value),savingSpecial:num($("baseSavingSpecial").value),other:num($("baseOther").value),
+    fixedCard:num($("baseFixedCard").value)};
+  localStorage.setItem(BK,JSON.stringify(base));
+  $("baseStatus").textContent="✓ 基本設定を保存しました";$("baseStatus").className="status";
+  if(currentPeriod().unsaved)loadMonth();
+  setTimeout(()=>$("baseStatus").textContent="",1800);
+};
+function updateStats(){
+  $("statCount").textContent=es.length.toLocaleString("ja-JP")+"件";
+  if(es.length){const first=new Date([...es].sort((a,b)=>new Date(a.date)-new Date(b.date))[0].date);$("statFirst").textContent=`${first.getFullYear()}/${first.getMonth()+1}/${first.getDate()}`}
+  else $("statFirst").textContent="—";
+  $("statPeriods").textContent=Object.keys(ms).length+"期間";
+  if(meta.lastBackup){const d=new Date(meta.lastBackup);$("statBackup").textContent=`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    const days=(Date.now()-d.getTime())/86400000;$("backupWarn").textContent=days>=30?`最終バックアップから${Math.floor(days)}日経過しています。`:""}
+  else{$("statBackup").textContent="まだありません";$("backupWarn").textContent=es.length||Object.keys(ms).length?"バックアップを1つ作っておくと安心です。":""}
+}
+$("backup").onclick=()=>{
+  const now=new Date(),payload={app:"atoikura",version:"4.1",exportedAt:now.toISOString(),baseSettings:base,periodSettings:ms,monthSettings:ms,transactions:es};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a"),pad=n=>String(n).padStart(2,"0");
+  a.href=url;a.download=`atoikura_${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}.json`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  meta.lastBackup=now.toISOString();saveMeta();updateStats();
+};
+$("restoreBtn").onclick=()=>$("restoreFile").click();
+$("restoreFile").onchange=async e=>{
+  const f=e.target.files?.[0];if(!f)return;
+  try{const data=JSON.parse(await f.text()),periods=data.periodSettings||data.monthSettings;
+    if(data.app!=="atoikura"||!Array.isArray(data.transactions)||typeof periods!=="object")throw new Error();
+    if(!confirm("現在のデータをバックアップの内容で置き換えます。復元しますか？"))return;
+    es=data.transactions;ms=periods||{};base=data.baseSettings||null;normalizePeriods();
+    saveEntries();saveMonths();if(base)localStorage.setItem(BK,JSON.stringify(base));else localStorage.removeItem(BK);
+    meta.lastRestore=new Date().toISOString();saveMeta();loadBase();loadMonth();render();alert("バックアップから復元しました。");
+  }catch(err){alert("このファイルは復元できませんでした。あといくら？のバックアップJSONか確認してください。")}
+  finally{e.target.value=""}
+};
+$("resetAll").onclick=()=>{
+  if(!confirm("この端末の「あといくら？」データをすべて削除します。続けますか？"))return;
+  if(!confirm("本当に削除しますか？ この操作は元に戻せません。"))return;
+  [EK,MK,BK,META,"atoikura_selected_card"].forEach(k=>localStorage.removeItem(k));es=[];ms={};base=null;meta={};selected="";
+  document.querySelectorAll(".cardbtn").forEach(x=>x.classList.remove("on"));loadBase();loadMonth();render();alert("すべてのデータを削除しました。");
+};
+loadBase();loadMonth();render();
+</script>
+</body>
+</html>
