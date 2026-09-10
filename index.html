@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>あといくら？ v4.1</title>
+<title>あといくら？ ver.1.0</title>
 <style>
 :root{
   --bg:#f4f4f5; --card:#fff; --text:#111; --muted:#666; --line:#ddd;
@@ -69,7 +69,7 @@ li:first-child{border-top:0}
 <main class="app">
 <section id="card" class="page on">
   <div class="box">
-    <h1>あといくら？ <span class="badge">試作 v4.1</span></h1>
+    <h1>あといくら？ <span class="badge">ver.1.0</span></h1>
     <div class="muted period"></div>
     <div class="label" style="margin-top:20px">今期のカード利用</div>
     <div id="spent" class="big">0円</div>
@@ -365,7 +365,7 @@ function updateStats(){
   else{$("statBackup").textContent="まだありません";$("backupWarn").textContent=es.length||Object.keys(ms).length?"バックアップを1つ作っておくと安心です。":""}
 }
 $("backup").onclick=()=>{
-  const now=new Date(),payload={app:"atoikura",version:"4.1",exportedAt:now.toISOString(),baseSettings:base,periodSettings:ms,monthSettings:ms,transactions:es};
+  const now=new Date(),payload={app:"atoikura",version:"1.0",exportedAt:now.toISOString(),baseSettings:base,periodSettings:ms,monthSettings:ms,transactions:es};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a"),pad=n=>String(n).padStart(2,"0");
   a.href=url;a.download=`atoikura_${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}.json`;
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
