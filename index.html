@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>あといくら？ ver.1.0</title>
+<title>あといくら？ v1.1</title>
 <style>
 :root{
   --bg:#f4f4f5; --card:#fff; --text:#111; --muted:#666; --line:#ddd;
@@ -30,8 +30,11 @@ input{width:100%;font:inherit;border:1px solid #ccc;border-radius:10px;padding:1
 button{font:inherit;cursor:pointer}
 #add,.wide,.backupbtn{border:0;border-radius:10px;background:#111;color:#fff;font-weight:750;padding:11px 16px}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:7px}
-.cardbtn{border:1px solid #ccc;background:#fff;border-radius:10px;padding:10px 4px}
-.cardbtn.on{background:#111;color:#fff;border-color:#111}
+.cardbtn{border:1px solid #ccc;background:#fff;border-radius:10px;padding:10px 4px;font-weight:700;color:#222}
+.cardbtn.on[data-c="楽天"]{background:#bf0000;color:#fff;border-color:#bf0000}
+.cardbtn.on[data-c="Amazon"]{background:#ff9900;color:#222;border-color:#ff9900}
+.cardbtn.on[data-c="PayPay"]{background:#ff0033;color:#fff;border-color:#ff0033}
+.cardbtn.on[data-c="イオン"]{background:#8a2be2;color:#fff;border-color:#8a2be2}
 ul{list-style:none;padding:0;margin:0}
 li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 0;border-top:1px solid #eee}
 li:first-child{border-top:0}
@@ -69,13 +72,13 @@ li:first-child{border-top:0}
 <main class="app">
 <section id="card" class="page on">
   <div class="box">
-    <h1>あといくら？ <span class="badge">ver.1.0</span></h1>
+    <h1>あといくら？ <span class="badge">v1.1</span></h1>
     <div class="muted period"></div>
     <div class="label" style="margin-top:20px">今期のカード利用</div>
     <div id="spent" class="big">0円</div>
     <div class="label">あと</div>
     <div id="remaining" class="remain">今月タブで設定</div>
-    <div class="muted">カード固定費（予約済み） <span id="fixedDisplay">0円</span></div><div class="muted">今期の利用ライン <span id="line">未設定</span></div>
+    <div class="muted">カード固定費 <span id="fixedDisplay">0円</span></div><div class="muted">今期の利用ライン <span id="line">未設定</span></div>
     <div class="progress"><div id="bar"></div></div>
   </div>
 
@@ -112,6 +115,7 @@ li:first-child{border-top:0}
     <div class="row"><label>電気代</label><div class="money"><input id="electric" type="text" inputmode="numeric"><span>円</span></div></div>
     <div class="row"><label>積立</label><div class="money"><input id="saving" type="text" inputmode="numeric"><span>円</span></div></div>
     <div class="row"><label>その他の先取り</label><div class="money"><input id="other" type="text" inputmode="numeric"><span>円</span></div></div>
+    <div class="row"><label>カード固定費</label><div class="money"><input id="fixedCard" type="text" inputmode="numeric"><span>円</span></div></div>
 
     <div class="calcbox">
       <div class="label">今期カードに使える額</div>
@@ -265,7 +269,7 @@ function render(){
   const cur=es.filter(e=>inPeriod(e,d));
   const sp=cur.reduce((a,e)=>a+num(e.amount),0);
   const lim=p.unsaved?null:limit(d);
-  const fixed=p.unsaved?num(d.fixedCard):num(d.fixedCard);
+  const fixed=num(d.fixedCard);
   $("spent").textContent=yen(sp);
   $("fixedDisplay").textContent=yen(fixed);
   $("line").textContent=lim===null?"未設定":yen(lim);
@@ -285,7 +289,7 @@ function render(){
 function loadMonth(){
   const p=currentPeriod(),d=p.data;
   $("periodStart").value=d.startDate;$("periodEnd").value=d.endDate;
-  ["salary","rent","nisa","electric","saving","other"].forEach(k=>$(k).value=comma(d[k]));
+  ["salary","rent","nisa","electric","saving","other","fixedCard"].forEach(k=>$(k).value=comma(d[k]));
   calcNow();
   if(!p.unsaved){$("status").textContent="✓ 保存済み";$("status").className="status"}
   else{$("status").textContent=base?"基本設定を引き継いでいます（まだ今期未保存）":"基本設定が未登録です";$("status").className="status unsaved"}
@@ -294,7 +298,7 @@ function readMonth(){
   const v=k=>$(k).value;
   return {startDate:$("periodStart").value,endDate:$("periodEnd").value,salary:v("salary")===""?"":num(v("salary")),
     rent:num(v("rent")),nisa:num(v("nisa")),electric:num(v("electric")),saving:num(v("saving")),other:num(v("other")),
-    fixedCard:num(currentPeriod().data.fixedCard||base?.fixedCard||0)};
+    fixedCard:num(v("fixedCard"))};
 }
 function calcNow(){const l=limit(readMonth());$("calc").textContent=l===null?"手取りを入力":yen(l)}
 function loadBase(){
@@ -320,10 +324,10 @@ $("add").onclick=()=>{
   es.push({id:(crypto.randomUUID?crypto.randomUUID():Date.now()+""),amount:n,card:selected,item:$("item").value.trim(),date:new Date().toISOString()});
   saveEntries();$("amount").value="";$("item").value="";render();$("amount").focus();
 };
-["amount","salary","rent","nisa","electric","saving","other","baseRent","baseNisa","baseElectric","baseSaving","baseSavingSpecial","baseOther","baseFixedCard"].forEach(id=>{
+["amount","salary","rent","nisa","electric","saving","other","fixedCard","baseRent","baseNisa","baseElectric","baseSaving","baseSavingSpecial","baseOther","baseFixedCard"].forEach(id=>{
   $(id).addEventListener("input",()=>{
     $(id).value=comma($(id).value);
-    if(["salary","rent","nisa","electric","saving","other"].includes(id)){
+    if(["salary","rent","nisa","electric","saving","other","fixedCard"].includes(id)){
       calcNow();$("status").textContent="● 未保存の変更があります";$("status").className="status unsaved";
       $("saveMonth").textContent="この内容で今期を設定";$("saveMonth").classList.remove("saved");
     }
@@ -338,8 +342,6 @@ $("saveMonth").onclick=()=>{
   if(d.endDate<d.startDate){alert("終了日は開始日以降にしてください");return}
   if(d.salary===""){alert("手取りを入力してください");return}
   const old=currentPeriod();
-  // Preserve the fixed cost captured for this period; new periods use current base setting.
-  if(old.unsaved)d.fixedCard=num(base?.fixedCard||0); else d.fixedCard=num(old.data.fixedCard);
   if(!old.unsaved && old.key!==d.startDate)delete ms[old.key];
   ms[d.startDate]=d;saveMonths();
   $("status").textContent="✓ 保存済み";$("status").className="status";
